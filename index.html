@@ -25,6 +25,16 @@
       </form>
       <button id="back-to-clients">Back to Clients</button>
     </section>
+    <section id="tasks-section" style="display:none;">
+      <h2 id="tasks-title"></h2>
+      <ul id="tasks-list"></ul>
+      <form id="add-task-form">
+        <input type="text" id="task-desc-input" placeholder="Add new task" required />
+        <input type="text" id="task-assignee-input" placeholder="Assign to (name)" required />
+        <button type="submit">Add Task</button>
+      </form>
+      <button id="back-to-projects">Back to Projects</button>
+    </section>
   </div>
   <script>
     // In-memory data
@@ -42,8 +52,16 @@
     const addProjectForm = document.getElementById('add-project-form');
     const projectNameInput = document.getElementById('project-name-input');
     const backToClientsBtn = document.getElementById('back-to-clients');
+    const tasksSection = document.getElementById('tasks-section');
+    const tasksTitle = document.getElementById('tasks-title');
+    const tasksList = document.getElementById('tasks-list');
+    const addTaskForm = document.getElementById('add-task-form');
+    const taskDescInput = document.getElementById('task-desc-input');
+    const taskAssigneeInput = document.getElementById('task-assignee-input');
+    const backToProjectsBtn = document.getElementById('back-to-projects');
 
     let selectedClientIdx = null;
+    let selectedProjectIdx = null;
 
     // Render clients
     function renderClients() {
@@ -69,7 +87,26 @@
       client.projects.forEach((project, idx) => {
         const li = document.createElement('li');
         li.textContent = project.name;
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', () => {
+          selectedProjectIdx = idx;
+          showTasksSection();
+        });
         projectsList.appendChild(li);
+      });
+    }
+
+    // Render tasks for selected project
+    function renderTasks() {
+      if (selectedClientIdx === null || selectedProjectIdx === null) return;
+      const client = data.clients[selectedClientIdx];
+      const project = client.projects[selectedProjectIdx];
+      tasksTitle.textContent = `Tasks for ${project.name}`;
+      tasksList.innerHTML = '';
+      project.tasks.forEach((task, idx) => {
+        const li = document.createElement('li');
+        li.textContent = `${task.desc} (Assigned to: ${task.assignee})`;
+        tasksList.appendChild(li);
       });
     }
 
@@ -77,6 +114,8 @@
     function showProjectsSection() {
       document.getElementById('clients-section').style.display = 'none';
       projectsSection.style.display = '';
+      tasksSection.style.display = 'none';
+      selectedProjectIdx = null;
       renderProjects();
     }
 
@@ -84,8 +123,17 @@
     function showClientsSection() {
       projectsSection.style.display = 'none';
       document.getElementById('clients-section').style.display = '';
+      tasksSection.style.display = 'none';
       selectedClientIdx = null;
+      selectedProjectIdx = null;
       renderClients();
+    }
+
+    // Show tasks section
+    function showTasksSection() {
+      projectsSection.style.display = 'none';
+      tasksSection.style.display = '';
+      renderTasks();
     }
 
     // Add client
@@ -110,9 +158,27 @@
       }
     });
 
+    // Add task
+    addTaskForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const desc = taskDescInput.value.trim();
+      const assignee = taskAssigneeInput.value.trim();
+      if (desc && assignee && selectedClientIdx !== null && selectedProjectIdx !== null) {
+        data.clients[selectedClientIdx].projects[selectedProjectIdx].tasks.push({ desc, assignee });
+        taskDescInput.value = '';
+        taskAssigneeInput.value = '';
+        renderTasks();
+      }
+    });
+
     // Back to clients
     backToClientsBtn.addEventListener('click', function() {
       showClientsSection();
+    });
+
+    // Back to projects
+    backToProjectsBtn.addEventListener('click', function() {
+      showProjectsSection();
     });
 
     // Initial render
