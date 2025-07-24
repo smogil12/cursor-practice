@@ -6,6 +6,51 @@
   <title>Document</title>
 </head>
 <body>
-  <h1>cursor ai testing without claude</h1>
+  <h1>Project Management App</h1>
+  <div id="app">
+    <section id="clients-section">
+      <h2>Clients</h2>
+      <ul id="clients-list"></ul>
+      <form id="add-client-form">
+        <input type="text" id="client-name-input" placeholder="Add new client" required />
+        <button type="submit">Add Client</button>
+      </form>
+    </section>
+  </div>
+  <script>
+    // In-memory data
+    const data = {
+      clients: []
+    };
+
+    // DOM elements
+    const clientsList = document.getElementById('clients-list');
+    const addClientForm = document.getElementById('add-client-form');
+    const clientNameInput = document.getElementById('client-name-input');
+
+    // Render clients
+    function renderClients() {
+      clientsList.innerHTML = '';
+      data.clients.forEach((client, idx) => {
+        const li = document.createElement('li');
+        li.textContent = client.name;
+        clientsList.appendChild(li);
+      });
+    }
+
+    // Add client
+    addClientForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = clientNameInput.value.trim();
+      if (name) {
+        data.clients.push({ name, projects: [] });
+        clientNameInput.value = '';
+        renderClients();
+      }
+    });
+
+    // Initial render
+    renderClients();
+  </script>
 </body>
 </html>
