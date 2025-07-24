@@ -16,6 +16,15 @@
         <button type="submit">Add Client</button>
       </form>
     </section>
+    <section id="projects-section" style="display:none;">
+      <h2 id="projects-title"></h2>
+      <ul id="projects-list"></ul>
+      <form id="add-project-form">
+        <input type="text" id="project-name-input" placeholder="Add new project" required />
+        <button type="submit">Add Project</button>
+      </form>
+      <button id="back-to-clients">Back to Clients</button>
+    </section>
   </div>
   <script>
     // In-memory data
@@ -27,6 +36,14 @@
     const clientsList = document.getElementById('clients-list');
     const addClientForm = document.getElementById('add-client-form');
     const clientNameInput = document.getElementById('client-name-input');
+    const projectsSection = document.getElementById('projects-section');
+    const projectsTitle = document.getElementById('projects-title');
+    const projectsList = document.getElementById('projects-list');
+    const addProjectForm = document.getElementById('add-project-form');
+    const projectNameInput = document.getElementById('project-name-input');
+    const backToClientsBtn = document.getElementById('back-to-clients');
+
+    let selectedClientIdx = null;
 
     // Render clients
     function renderClients() {
@@ -34,8 +51,41 @@
       data.clients.forEach((client, idx) => {
         const li = document.createElement('li');
         li.textContent = client.name;
+        li.style.cursor = 'pointer';
+        li.addEventListener('click', () => {
+          selectedClientIdx = idx;
+          showProjectsSection();
+        });
         clientsList.appendChild(li);
       });
+    }
+
+    // Render projects for selected client
+    function renderProjects() {
+      if (selectedClientIdx === null) return;
+      const client = data.clients[selectedClientIdx];
+      projectsTitle.textContent = `Projects for ${client.name}`;
+      projectsList.innerHTML = '';
+      client.projects.forEach((project, idx) => {
+        const li = document.createElement('li');
+        li.textContent = project.name;
+        projectsList.appendChild(li);
+      });
+    }
+
+    // Show projects section
+    function showProjectsSection() {
+      document.getElementById('clients-section').style.display = 'none';
+      projectsSection.style.display = '';
+      renderProjects();
+    }
+
+    // Show clients section
+    function showClientsSection() {
+      projectsSection.style.display = 'none';
+      document.getElementById('clients-section').style.display = '';
+      selectedClientIdx = null;
+      renderClients();
     }
 
     // Add client
@@ -47,6 +97,22 @@
         clientNameInput.value = '';
         renderClients();
       }
+    });
+
+    // Add project
+    addProjectForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const name = projectNameInput.value.trim();
+      if (name && selectedClientIdx !== null) {
+        data.clients[selectedClientIdx].projects.push({ name, tasks: [] });
+        projectNameInput.value = '';
+        renderProjects();
+      }
+    });
+
+    // Back to clients
+    backToClientsBtn.addEventListener('click', function() {
+      showClientsSection();
     });
 
     // Initial render
