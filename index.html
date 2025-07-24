@@ -42,6 +42,7 @@
       <form id="add-task-form">
         <input type="text" id="task-desc-input" placeholder="Add new task" required />
         <input type="text" id="task-assignee-input" placeholder="Assign to (name)" required />
+        <input type="number" id="task-hours-input" placeholder="Time spent (hours)" min="0" step="0.1" required />
         <button type="submit">Add Task</button>
       </form>
       <button id="back-to-projects">Back to Projects</button>
@@ -106,6 +107,7 @@
     const addTaskForm = document.getElementById('add-task-form');
     const taskDescInput = document.getElementById('task-desc-input');
     const taskAssigneeInput = document.getElementById('task-assignee-input');
+    const taskHoursInput = document.getElementById('task-hours-input');
     const backToProjectsBtn = document.getElementById('back-to-projects');
 
     let selectedClientIdx = null;
@@ -203,8 +205,12 @@
         const li = document.createElement('li');
         li.style.display = 'flex';
         li.style.alignItems = 'center';
+        // Calculate remaining hours
+        const total = typeof project.hours === 'number' ? project.hours : 0;
+        const spent = (project.tasks || []).reduce((sum, t) => sum + (typeof t.hours === 'number' ? t.hours : 0), 0);
+        const remaining = Math.max(0, total - spent);
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = `${project.name} (Hours: ${project.hours ?? 0})`;
+        nameSpan.textContent = `${project.name} (Total: ${total}h, Remaining: ${remaining}h)`;
         nameSpan.style.cursor = 'pointer';
         nameSpan.addEventListener('click', () => {
           selectedProjectIdx = idx;
@@ -235,7 +241,7 @@
         li.style.display = 'flex';
         li.style.alignItems = 'center';
         const descSpan = document.createElement('span');
-        descSpan.textContent = `${task.desc} (Assigned to: ${task.assignee})`;
+        descSpan.textContent = `${task.desc} (Assigned to: ${task.assignee}, Time spent: ${task.hours ?? 0}h)`;
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Delete';
         delBtn.style.marginLeft = '8px';
@@ -296,10 +302,12 @@
       e.preventDefault();
       const desc = taskDescInput.value.trim();
       const assignee = taskAssigneeInput.value.trim();
-      if (desc && assignee && selectedClientIdx !== null && selectedProjectIdx !== null) {
-        data.clients[selectedClientIdx].projects[selectedProjectIdx].tasks.push({ desc, assignee });
+      const hours = parseFloat(taskHoursInput.value);
+      if (desc && assignee && !isNaN(hours) && selectedClientIdx !== null && selectedProjectIdx !== null) {
+        data.clients[selectedClientIdx].projects[selectedProjectIdx].tasks.push({ desc, assignee, hours });
         taskDescInput.value = '';
         taskAssigneeInput.value = '';
+        taskHoursInput.value = '';
         saveData();
         renderTasks();
       }
