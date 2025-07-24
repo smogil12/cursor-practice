@@ -31,6 +31,7 @@
       <ul id="projects-list"></ul>
       <form id="add-project-form">
         <input type="text" id="project-name-input" placeholder="Add new project" required />
+        <input type="number" id="project-hours-input" placeholder="Total hours" min="0" step="0.1" required />
         <button type="submit">Add Project</button>
       </form>
       <button id="back-to-clients">Back to Clients</button>
@@ -97,6 +98,7 @@
     const projectsList = document.getElementById('projects-list');
     const addProjectForm = document.getElementById('add-project-form');
     const projectNameInput = document.getElementById('project-name-input');
+    const projectHoursInput = document.getElementById('project-hours-input');
     const backToClientsBtn = document.getElementById('back-to-clients');
     const tasksSection = document.getElementById('tasks-section');
     const tasksTitle = document.getElementById('tasks-title');
@@ -202,7 +204,7 @@
         li.style.display = 'flex';
         li.style.alignItems = 'center';
         const nameSpan = document.createElement('span');
-        nameSpan.textContent = project.name;
+        nameSpan.textContent = `${project.name} (Hours: ${project.hours ?? 0})`;
         nameSpan.style.cursor = 'pointer';
         nameSpan.addEventListener('click', () => {
           selectedProjectIdx = idx;
@@ -281,9 +283,11 @@
     addProjectForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const name = projectNameInput.value.trim();
-      if (name && selectedClientIdx !== null) {
-        data.clients[selectedClientIdx].projects.push({ name, tasks: [] });
+      const hours = parseFloat(projectHoursInput.value);
+      if (name && !isNaN(hours) && selectedClientIdx !== null) {
+        data.clients[selectedClientIdx].projects.push({ name, hours, tasks: [] });
         projectNameInput.value = '';
+        projectHoursInput.value = '';
         saveData();
         renderProjects();
       }
