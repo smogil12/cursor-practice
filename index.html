@@ -42,6 +42,19 @@
       clients: []
     };
 
+    // Persistence helpers
+    function saveData() {
+      localStorage.setItem('pmAppData', JSON.stringify(data));
+    }
+    function loadData() {
+      const saved = localStorage.getItem('pmAppData');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Deep copy to preserve reference
+        data.clients = parsed.clients || [];
+      }
+    }
+
     // DOM elements
     const clientsList = document.getElementById('clients-list');
     const addClientForm = document.getElementById('add-client-form');
@@ -143,6 +156,7 @@
       if (name) {
         data.clients.push({ name, projects: [] });
         clientNameInput.value = '';
+        saveData();
         renderClients();
       }
     });
@@ -154,6 +168,7 @@
       if (name && selectedClientIdx !== null) {
         data.clients[selectedClientIdx].projects.push({ name, tasks: [] });
         projectNameInput.value = '';
+        saveData();
         renderProjects();
       }
     });
@@ -167,6 +182,7 @@
         data.clients[selectedClientIdx].projects[selectedProjectIdx].tasks.push({ desc, assignee });
         taskDescInput.value = '';
         taskAssigneeInput.value = '';
+        saveData();
         renderTasks();
       }
     });
@@ -181,7 +197,8 @@
       showProjectsSection();
     });
 
-    // Initial render
+    // Load data and initial render
+    loadData();
     renderClients();
   </script>
 </body>
