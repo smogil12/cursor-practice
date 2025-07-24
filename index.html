@@ -81,12 +81,26 @@
       clientsList.innerHTML = '';
       data.clients.forEach((client, idx) => {
         const li = document.createElement('li');
-        li.textContent = client.name;
-        li.style.cursor = 'pointer';
-        li.addEventListener('click', () => {
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = client.name;
+        nameSpan.style.cursor = 'pointer';
+        nameSpan.addEventListener('click', () => {
           selectedClientIdx = idx;
           showProjectsSection();
         });
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.style.marginLeft = '8px';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          data.clients.splice(idx, 1);
+          saveData();
+          renderClients();
+        });
+        li.appendChild(nameSpan);
+        li.appendChild(delBtn);
         clientsList.appendChild(li);
       });
     }
@@ -99,12 +113,26 @@
       projectsList.innerHTML = '';
       client.projects.forEach((project, idx) => {
         const li = document.createElement('li');
-        li.textContent = project.name;
-        li.style.cursor = 'pointer';
-        li.addEventListener('click', () => {
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = project.name;
+        nameSpan.style.cursor = 'pointer';
+        nameSpan.addEventListener('click', () => {
           selectedProjectIdx = idx;
           showTasksSection();
         });
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.style.marginLeft = '8px';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          client.projects.splice(idx, 1);
+          saveData();
+          renderProjects();
+        });
+        li.appendChild(nameSpan);
+        li.appendChild(delBtn);
         projectsList.appendChild(li);
       });
     }
@@ -118,7 +146,21 @@
       tasksList.innerHTML = '';
       project.tasks.forEach((task, idx) => {
         const li = document.createElement('li');
-        li.textContent = `${task.desc} (Assigned to: ${task.assignee})`;
+        li.style.display = 'flex';
+        li.style.alignItems = 'center';
+        const descSpan = document.createElement('span');
+        descSpan.textContent = `${task.desc} (Assigned to: ${task.assignee})`;
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Delete';
+        delBtn.style.marginLeft = '8px';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          project.tasks.splice(idx, 1);
+          saveData();
+          renderTasks();
+        });
+        li.appendChild(descSpan);
+        li.appendChild(delBtn);
         tasksList.appendChild(li);
       });
     }
