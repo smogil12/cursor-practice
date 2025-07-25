@@ -122,21 +122,15 @@
     let currentUser = null;
     function getUserKey(username) { return `tailai_test_data_${username}`; }
     function getUserPasswordKey(username) { return `tailai_test_pw_${username}`; }
-    function saveUserData() {
-      if (currentUser) localStorage.setItem(getUserKey(currentUser), JSON.stringify(appData));
+    async function hashPassword(password) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password);
+      const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
     }
-    function loadUserData() {
-      if (currentUser) {
-        const raw = localStorage.getItem(getUserKey(currentUser));
-        if (raw) {
-          try { appData = JSON.parse(raw); } catch { appData = { clients: [] }; }
-        } else {
-          appData = { clients: [] };
-        }
-      }
-    }
-    function savePassword(username, password) {
-      localStorage.setItem(getUserPasswordKey(username), password);
+    async function savePassword(username, password) {
+      const hash = await hashPassword(password);
+      localStorage.setItem(getUserPasswordKey(username), hash);
     }
     function getPassword(username) {
       return localStorage.getItem(getUserPasswordKey(username));
@@ -166,7 +160,7 @@
         showLogin();
       }
     }
-    document.getElementById('login-form').onsubmit = function(e) {
+    document.getElementById('login-form').onsubmit = async function(e) {
       e.preventDefault();
       const username = document.getElementById('login-username').value.trim();
       const password = document.getElementById('login-password').value;
@@ -174,11 +168,20 @@
         document.getElementById('login-error').textContent = 'Please enter username and password.';
         return;
       }
-      const savedPassword = getPassword(username);
-      if (savedPassword === null) {
-        // New user, save password
-        savePassword(username, password);
-      } else if (savedPassword !== password) {
+      if (username.length < 3 || /\s/.test(username)) {
+        document.getElementById('login-error').textContent = 'Username must be at least 3 characters and contain no spaces.';
+        return;
+      }
+      if (password.length < 8) {
+        document.getElementById('login-error').textContent = 'Password must be at least 8 characters.';
+        return;
+      }
+      const savedPasswordHash = getPassword(username);
+      const enteredPasswordHash = await hashPassword(password);
+      if (savedPasswordHash === null) {
+        // New user, save password hash
+        await savePassword(username, password);
+      } else if (savedPasswordHash !== enteredPasswordHash) {
         document.getElementById('login-error').textContent = 'Incorrect password.';
         return;
       }
