@@ -455,12 +455,57 @@
     };
     window.changeTaskStatus = function(idx) {
       const task = appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks[idx];
-      const newStatus = prompt('Enter new status (todo, in progress, complete):', task.status);
-      if (newStatus && ['todo', 'in progress', 'complete'].includes(newStatus)) {
-        task.status = newStatus;
-        saveData();
-        renderTasksView();
+      
+      // Create modal HTML
+      const modalHtml = `
+        <div class="modal fade" id="statusModal" tabindex="-1">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title">Change Task Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+              </div>
+              <div class="modal-body">
+                <p><strong>Task:</strong> ${task.desc}</p>
+                <label for="statusSelect" class="form-label">Select Status:</label>
+                <select id="statusSelect" class="form-select">
+                  <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
+                  <option value="in progress" ${task.status === 'in progress' ? 'selected' : ''}>In Progress</option>
+                  <option value="complete" ${task.status === 'complete' ? 'selected' : ''}>Complete</option>
+                </select>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTaskStatus(${idx})">Save Changes</button>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      
+      // Remove existing modal if any
+      const existingModal = document.getElementById('statusModal');
+      if (existingModal) {
+        existingModal.remove();
       }
+      
+      // Add modal to body
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+      
+      // Show modal
+      const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+      modal.show();
+    };
+    
+    window.saveTaskStatus = function(idx) {
+      const newStatus = document.getElementById('statusSelect').value;
+      const task = appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks[idx];
+      task.status = newStatus;
+      saveData();
+      renderTasksView();
+      
+      // Hide modal
+      const modal = bootstrap.Modal.getInstance(document.getElementById('statusModal'));
+      modal.hide();
     };
     // Initial render
     tryAutoLogin();
