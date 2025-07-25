@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tail AI Test Environment</title>
+  <style>
+    /* Adapted from styles.css */
+    body { font-family: Arial, sans-serif; margin: 0; background: #f8f9fa; }
+    #mytask-layout { display: flex; min-height: 100vh; }
+    .sidebar { width: 220px; background: #22223b; color: #fff; padding: 20px 0; min-height: 100vh; }
+    .sidebar h2 { text-align: center; margin-bottom: 1em; }
+    .sidebar ul { list-style: none; padding: 0; }
+    .sidebar li { padding: 10px 24px; cursor: pointer; }
+    .sidebar li:hover { background: #4a4e69; }
+    .main { flex: 1; padding: 32px; background: #fff; }
+    .header { background: #4a4e69; color: #fff; padding: 16px 32px; font-size: 1.2em; }
+    .role-btns { margin: 16px 0; }
+    .role-btns button { margin-right: 8px; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body data-mytask="theme-indigo">
+  <div class="role-btns">
+    <span>Switch Role: </span>
+    <button onclick="setRole('ROLE_MANAGER')">Manager</button>
+    <button onclick="setRole('ROLE_ADMIN')">Admin</button>
+    <button onclick="setRole('ROLE_EMPLOYEE')">Employee</button>
+  </div>
+  <div id="mytask-layout">
+    <div id="sidebar" class="sidebar"></div>
+    <div style="flex:1; display:flex; flex-direction:column;">
+      <div id="header" class="header"></div>
+      <div class="main">
+        <h2>Welcome to Tail AI Test Environment</h2>
+        <div id="main-content">Select a role to see the sidebar and header change.</div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // --- Role-based UI logic ---
+    const sidebar = document.getElementById('sidebar');
+    const header = document.getElementById('header');
+    const mainContent = document.getElementById('main-content');
+    const ROLE_KEY = 'tailai_test_role';
+
+    function getRole() {
+      return localStorage.getItem(ROLE_KEY) || '';
+    }
+    function setRole(role) {
+      localStorage.setItem(ROLE_KEY, role);
+      renderUI();
+    }
+
+    function renderSidebar(role) {
+      if (role === 'ROLE_MANAGER') {
+        sidebar.innerHTML = `<h2>Manager Sidebar</h2><ul><li>Dashboard</li><li>Team</li><li>Reports</li></ul>`;
+      } else if (role === 'ROLE_ADMIN') {
+        sidebar.innerHTML = `<h2>Admin Sidebar</h2><ul><li>Admin Panel</li><li>Users</li><li>Settings</li></ul>`;
+      } else if (role === 'ROLE_EMPLOYEE') {
+        sidebar.innerHTML = `<h2>Employee Sidebar</h2><ul><li>My Tasks</li><li>Profile</li></ul>`;
+      } else {
+        sidebar.innerHTML = '';
+      }
+    }
+    function renderHeader(role) {
+      if (role === 'ROLE_MANAGER') {
+        header.textContent = 'Manager Header';
+      } else if (role === 'ROLE_ADMIN') {
+        header.textContent = 'Admin Header';
+      } else if (role === 'ROLE_EMPLOYEE') {
+        header.textContent = 'Employee Header';
+      } else {
+        header.textContent = '';
+      }
+    }
+    function renderUI() {
+      const role = getRole();
+      if (role) {
+        sidebar.style.display = '';
+        header.style.display = '';
+        renderSidebar(role);
+        renderHeader(role);
+        mainContent.innerHTML = `<p>Current role: <b>${role.replace('ROLE_', '')}</b></p>`;
+      } else {
+        sidebar.style.display = 'none';
+        header.style.display = 'none';
+        mainContent.innerHTML = '<p>Please select a role above.</p>';
+      }
+    }
+    // Initial render
+    renderUI();
+  </script>
+</body>
+</html> 
