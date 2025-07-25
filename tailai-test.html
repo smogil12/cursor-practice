@@ -81,13 +81,172 @@
         header.style.display = '';
         renderSidebar(role);
         renderHeader(role);
-        mainContent.innerHTML = `<p>Current role: <b>${role.replace('ROLE_', '')}</b></p>`;
+        renderApp();
       } else {
         sidebar.style.display = 'none';
         header.style.display = 'none';
         mainContent.innerHTML = '<p>Please select a role above.</p>';
       }
     }
+
+    // --- Data Model & Storage ---
+    const DATA_KEY = 'tailai_test_data';
+    let appData = { clients: [] };
+    function saveData() {
+      localStorage.setItem(DATA_KEY, JSON.stringify(appData));
+    }
+    function loadData() {
+      const raw = localStorage.getItem(DATA_KEY);
+      if (raw) {
+        try { appData = JSON.parse(raw); } catch { appData = { clients: [] }; }
+      } else {
+        appData = { clients: [] };
+      }
+    }
+    loadData();
+
+    // --- State ---
+    let selectedClientIdx = null;
+    let selectedProjectIdx = null;
+
+    // --- Render Functions ---
+    function renderApp() {
+      if (selectedClientIdx === null) {
+        renderClientsView();
+      } else if (selectedProjectIdx === null) {
+        renderProjectsView();
+      } else {
+        renderTasksView();
+      }
+    }
+    function renderClientsView() {
+      let html = `<h3>Clients</h3><ul>`;
+      appData.clients.forEach((client, idx) => {
+        html += `<li style='margin-bottom:8px;'>
+          <span style='cursor:pointer;' onclick='selectClient(${idx})'><b>${client.name}</b></span>
+          <button onclick='deleteClient(${idx})' style='margin-left:8px;'>Delete</button>
+        </li>`;
+      });
+      html += `</ul>
+        <form id='add-client-form'>
+          <input type='text' id='client-name-input' placeholder='Add new client' required />
+          <button type='submit'>Add Client</button>
+        </form>`;
+      mainContent.innerHTML = html;
+      document.getElementById('add-client-form').onsubmit = function(e) {
+        e.preventDefault();
+        const name = document.getElementById('client-name-input').value.trim();
+        if (name) {
+          appData.clients.push({ name, projects: [] });
+          saveData();
+          renderClientsView();
+        }
+      };
+    }
+    function renderProjectsView() {
+      const client = appData.clients[selectedClientIdx];
+      let html = `<button onclick='backToClients()'>Back to Clients</button>`;
+      html += `<h3>Projects for ${client.name}</h3><ul>`;
+      client.projects.forEach((project, idx) => {
+        const total = typeof project.hours === 'number' ? project.hours : 0;
+        const spent = (project.tasks || []).reduce((sum, t) => sum + (typeof t.hours === 'number' ? t.hours : 0), 0);
+        const remaining = Math.max(0, total - spent);
+        html += `<li style='margin-bottom:8px;'>
+          <span style='cursor:pointer;' onclick='selectProject(${idx})'><b>${project.name}</b> (Total: ${total}h, Remaining: ${remaining}h)</span>
+          <button onclick='deleteProject(${idx})' style='margin-left:8px;'>Delete</button>
+        </li>`;
+      });
+      html += `</ul>
+        <form id='add-project-form'>
+          <input type='text' id='project-name-input' placeholder='Add new project' required />
+          <input type='number' id='project-hours-input' placeholder='Total hours' min='0' step='0.1' required />
+          <button type='submit'>Add Project</button>
+        </form>`;
+      mainContent.innerHTML = html;
+      document.getElementById('add-project-form').onsubmit = function(e) {
+        e.preventDefault();
+        const name = document.getElementById('project-name-input').value.trim();
+        const hours = parseFloat(document.getElementById('project-hours-input').value);
+        if (name && !isNaN(hours)) {
+          client.projects.push({ name, hours, tasks: [] });
+          saveData();
+          renderProjectsView();
+        }
+      };
+    }
+    function renderTasksView() {
+      const client = appData.clients[selectedClientIdx];
+      const project = client.projects[selectedProjectIdx];
+      let html = `<button onclick='backToProjects()'>Back to Projects</button>`;
+      html += `<h3>Tasks for ${project.name}</h3><ul>`;
+      project.tasks.forEach((task, idx) => {
+        html += `<li style='margin-bottom:8px;'>
+          <span><b>${task.desc}</b> (Assigned to: ${task.assignee}, Time spent: ${task.hours ?? 0}h)</span>
+          <button onclick='deleteTask(${idx})' style='margin-left:8px;'>Delete</button>
+        </li>`;
+      });
+      html += `</ul>
+        <form id='add-task-form'>
+          <input type='text' id='task-desc-input' placeholder='Add new task' required />
+          <input type='text' id='task-assignee-input' placeholder='Assign to (name)' required />
+          <input type='number' id='task-hours-input' placeholder='Time spent (hours)' min='0' step='0.1' required />
+          <button type='submit'>Add Task</button>
+        </form>`;
+      mainContent.innerHTML = html;
+      document.getElementById('add-task-form').onsubmit = function(e) {
+        e.preventDefault();
+        const desc = document.getElementById('task-desc-input').value.trim();
+        const assignee = document.getElementById('task-assignee-input').value.trim();
+        const hours = parseFloat(document.getElementById('task-hours-input').value);
+        if (desc && assignee && !isNaN(hours)) {
+          project.tasks.push({ desc, assignee, hours });
+          saveData();
+          renderTasksView();
+        }
+      };
+    }
+    // --- Navigation Functions ---
+    window.selectClient = function(idx) {
+      selectedClientIdx = idx;
+      selectedProjectIdx = null;
+      renderApp();
+    };
+    window.deleteClient = function(idx) {
+      if (confirm('Delete this client?')) {
+        appData.clients.splice(idx, 1);
+        saveData();
+        selectedClientIdx = null;
+        renderApp();
+      }
+    };
+    window.backToClients = function() {
+      selectedClientIdx = null;
+      selectedProjectIdx = null;
+      renderApp();
+    };
+    window.selectProject = function(idx) {
+      selectedProjectIdx = idx;
+      renderApp();
+    };
+    window.deleteProject = function(idx) {
+      if (confirm('Delete this project?')) {
+        appData.clients[selectedClientIdx].projects.splice(idx, 1);
+        saveData();
+        selectedProjectIdx = null;
+        renderApp();
+      }
+    };
+    window.backToProjects = function() {
+      selectedProjectIdx = null;
+      renderApp();
+    };
+    window.deleteTask = function(idx) {
+      if (confirm('Delete this task?')) {
+        appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks.splice(idx, 1);
+        saveData();
+        renderTasksView();
+      }
+    };
     // Initial render
     renderUI();
   </script>
