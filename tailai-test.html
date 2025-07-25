@@ -295,7 +295,10 @@
                 <tbody>`;
       client.projects.forEach((project, idx) => {
         const total = typeof project.hours === 'number' ? project.hours : 0;
-        const spent = (project.tasks || []).reduce((sum, t) => sum + (typeof t.hours === 'number' ? t.hours : 0), 0);
+        const spent = (project.tasks || []).reduce((sum, t) => {
+          // Only count hours for completed tasks
+          return sum + (t.status === 'complete' ? (typeof t.hours === 'number' ? t.hours : 0) : 0);
+        }, 0);
         const remaining = Math.max(0, total - spent);
         html += `<tr>
           <td><a href="#" onclick="selectProject(${idx})" class="fw-bold text-decoration-none">${project.name}</a></td>
@@ -351,15 +354,19 @@
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
-                  <tr><th>Description</th><th>Assignee</th><th>Time Spent</th><th style="width:120px;">Actions</th></tr>
+                  <tr><th>Description</th><th>Assignee</th><th>Time Spent</th><th>Status</th><th style="width:120px;">Actions</th></tr>
                 </thead>
                 <tbody>`;
       project.tasks.forEach((task, idx) => {
+        const statusClass = task.status === 'complete' ? 'badge bg-success' : 
+                          task.status === 'in progress' ? 'badge bg-warning' : 'badge bg-secondary';
         html += `<tr>
           <td>${task.desc}</td>
           <td>${task.assignee}</td>
           <td>${task.hours ?? 0}h</td>
+          <td><span class="${statusClass}">${task.status || 'todo'}</span></td>
           <td>
+            <button onclick="changeTaskStatus(${idx})" class="btn btn-info btn-sm me-1"><i class="bi bi-pencil"></i></button>
             <button onclick="deleteTask(${idx})" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
           </td>
         </tr>`;
@@ -377,6 +384,13 @@
                   <input type="number" id="task-hours-input" class="form-control" placeholder="Time spent (hours)" min="0" step="0.1" required />
                 </div>
                 <div class="col-auto">
+                  <select id="task-status-input" class="form-control">
+                    <option value="todo">Todo</option>
+                    <option value="in progress">In Progress</option>
+                    <option value="complete">Complete</option>
+                  </select>
+                </div>
+                <div class="col-auto">
                   <button type="submit" class="btn btn-success">Add Task</button>
                 </div>
               </form>
@@ -389,8 +403,9 @@
         const desc = document.getElementById('task-desc-input').value.trim();
         const assignee = document.getElementById('task-assignee-input').value.trim();
         const hours = parseFloat(document.getElementById('task-hours-input').value);
+        const status = document.getElementById('task-status-input').value;
         if (desc && assignee && !isNaN(hours)) {
-          project.tasks.push({ desc, assignee, hours });
+          project.tasks.push({ desc, assignee, hours, status });
           saveData();
           renderTasksView();
         }
@@ -434,6 +449,15 @@
     window.deleteTask = function(idx) {
       if (confirm('Delete this task?')) {
         appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks.splice(idx, 1);
+        saveData();
+        renderTasksView();
+      }
+    };
+    window.changeTaskStatus = function(idx) {
+      const task = appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks[idx];
+      const newStatus = prompt('Enter new status (todo, in progress, complete):', task.status);
+      if (newStatus && ['todo', 'in progress', 'complete'].includes(newStatus)) {
+        task.status = newStatus;
         saveData();
         renderTasksView();
       }
