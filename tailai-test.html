@@ -21,19 +21,31 @@
   </style>
 </head>
 <body data-mytask="theme-indigo">
-  <div class="role-btns">
-    <span>Switch Role: </span>
-    <button onclick="setRole('ROLE_MANAGER')">Manager</button>
-    <button onclick="setRole('ROLE_ADMIN')">Admin</button>
-    <button onclick="setRole('ROLE_EMPLOYEE')">Employee</button>
+  <div id="login-section" style="display:none; max-width:400px; margin:40px auto; background:#fff; padding:32px; border-radius:8px; box-shadow:0 2px 8px #0001;">
+    <h2>Login</h2>
+    <form id="login-form">
+      <input type="text" id="login-username" placeholder="Username" required style="width:100%;margin-bottom:8px;padding:8px;" />
+      <input type="password" id="login-password" placeholder="Password" required style="width:100%;margin-bottom:8px;padding:8px;" />
+      <button type="submit" style="width:100%;padding:8px;">Login</button>
+    </form>
+    <div id="login-error" style="color:red;margin-top:8px;"></div>
   </div>
-  <div id="mytask-layout">
-    <div id="sidebar" class="sidebar"></div>
-    <div style="flex:1; display:flex; flex-direction:column;">
-      <div id="header" class="header"></div>
-      <div class="main">
-        <h2>Welcome to Tail AI Test Environment</h2>
-        <div id="main-content">Select a role to see the sidebar and header change.</div>
+  <div id="app-ui" style="display:none;">
+    <div class="role-btns">
+      <span>Switch Role: </span>
+      <button onclick="setRole('ROLE_MANAGER')">Manager</button>
+      <button onclick="setRole('ROLE_ADMIN')">Admin</button>
+      <button onclick="setRole('ROLE_EMPLOYEE')">Employee</button>
+      <button id="logout-btn" style="float:right;">Logout</button>
+    </div>
+    <div id="mytask-layout">
+      <div id="sidebar" class="sidebar"></div>
+      <div style="flex:1; display:flex; flex-direction:column;">
+        <div id="header" class="header"></div>
+        <div class="main">
+          <h2>Welcome to Tail AI Test Environment</h2>
+          <div id="main-content">Select a role to see the sidebar and header change.</div>
+        </div>
       </div>
     </div>
   </div>
@@ -89,20 +101,84 @@
       }
     }
 
-    // --- Data Model & Storage ---
-    const DATA_KEY = 'tailai_test_data';
-    let appData = { clients: [] };
-    function saveData() {
-      localStorage.setItem(DATA_KEY, JSON.stringify(appData));
+    // --- Auth Logic ---
+    let currentUser = null;
+    function getUserKey(username) { return `tailai_test_data_${username}`; }
+    function getUserPasswordKey(username) { return `tailai_test_pw_${username}`; }
+    function saveUserData() {
+      if (currentUser) localStorage.setItem(getUserKey(currentUser), JSON.stringify(appData));
     }
-    function loadData() {
-      const raw = localStorage.getItem(DATA_KEY);
-      if (raw) {
-        try { appData = JSON.parse(raw); } catch { appData = { clients: [] }; }
-      } else {
-        appData = { clients: [] };
+    function loadUserData() {
+      if (currentUser) {
+        const raw = localStorage.getItem(getUserKey(currentUser));
+        if (raw) {
+          try { appData = JSON.parse(raw); } catch { appData = { clients: [] }; }
+        } else {
+          appData = { clients: [] };
+        }
       }
     }
+    function savePassword(username, password) {
+      localStorage.setItem(getUserPasswordKey(username), password);
+    }
+    function getPassword(username) {
+      return localStorage.getItem(getUserPasswordKey(username));
+    }
+    function showLogin() {
+      document.getElementById('login-section').style.display = '';
+      document.getElementById('app-ui').style.display = 'none';
+      document.getElementById('login-error').textContent = '';
+    }
+    function showApp() {
+      document.getElementById('login-section').style.display = 'none';
+      document.getElementById('app-ui').style.display = '';
+    }
+    function logout() {
+      currentUser = null;
+      sessionStorage.removeItem('tailai_test_user');
+      showLogin();
+    }
+    function tryAutoLogin() {
+      const user = sessionStorage.getItem('tailai_test_user');
+      if (user) {
+        currentUser = user;
+        showApp();
+        loadUserData();
+        renderUI();
+      } else {
+        showLogin();
+      }
+    }
+    document.getElementById('login-form').onsubmit = function(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value.trim();
+      const password = document.getElementById('login-password').value;
+      if (!username || !password) {
+        document.getElementById('login-error').textContent = 'Please enter username and password.';
+        return;
+      }
+      const savedPassword = getPassword(username);
+      if (savedPassword === null) {
+        // New user, save password
+        savePassword(username, password);
+      } else if (savedPassword !== password) {
+        document.getElementById('login-error').textContent = 'Incorrect password.';
+        return;
+      }
+      currentUser = username;
+      sessionStorage.setItem('tailai_test_user', username);
+      showApp();
+      loadUserData();
+      renderUI();
+      document.getElementById('login-form').reset();
+    };
+    document.getElementById('logout-btn').onclick = function() { logout(); };
+
+    // --- Data Model & Storage (per user) ---
+    const DATA_KEY = 'tailai_test_data';
+    let appData = { clients: [] };
+    function saveData() { saveUserData(); }
+    function loadData() { loadUserData(); }
     loadData();
 
     // --- State ---
@@ -248,7 +324,7 @@
       }
     };
     // Initial render
-    renderUI();
+    tryAutoLogin();
   </script>
 </body>
 </html> 
