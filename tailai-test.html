@@ -135,6 +135,19 @@
     function getPassword(username) {
       return localStorage.getItem(getUserPasswordKey(username));
     }
+    function saveUserData() {
+      if (currentUser) localStorage.setItem(getUserKey(currentUser), JSON.stringify(appData));
+    }
+    function loadUserData() {
+      if (currentUser) {
+        const raw = localStorage.getItem(getUserKey(currentUser));
+        if (raw) {
+          try { appData = JSON.parse(raw); } catch { appData = { clients: [] }; }
+        } else {
+          appData = { clients: [] };
+        }
+      }
+    }
     function showLogin() {
       document.getElementById('login-section').style.display = '';
       document.getElementById('app-ui').style.display = 'none';
