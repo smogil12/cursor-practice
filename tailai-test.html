@@ -54,7 +54,10 @@
         <button onclick="setRole('ROLE_ADMIN')" class="btn btn-outline-secondary btn-sm">Admin</button>
         <button onclick="setRole('ROLE_EMPLOYEE')" class="btn btn-outline-success btn-sm">Employee</button>
       </div>
-      <button id="logout-btn" class="btn btn-danger btn-sm">Logout</button>
+      <div>
+        <button onclick="clearAllData()" class="btn btn-warning btn-sm me-2">Clear Data</button>
+        <button id="logout-btn" class="btn btn-danger btn-sm">Logout</button>
+      </div>
     </div>
     <div id="mytask-layout" class="d-flex" style="min-height: 100vh;">
       <div id="sidebar" class="sidebar px-4 py-4 py-md-5 me-0"></div>
@@ -212,7 +215,15 @@
     let appData = { clients: [] };
     function saveData() { saveUserData(); }
     function loadData() { loadUserData(); }
-    loadData();
+    
+    // Function to clear all data (for debugging)
+    window.clearAllData = function() {
+      if (confirm('This will clear all data. Are you sure?')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        location.reload();
+      }
+    };
 
     // --- State ---
     let selectedClientIdx = null;
@@ -370,9 +381,13 @@
         const statusClass = task.status === 'complete' ? 'badge bg-success' : 
                           task.status === 'in progress' ? 'badge bg-warning' : 'badge bg-secondary';
         const actualTime = task.actualMinutes ? formatMinutes(task.actualMinutes) : '-';
+        
+        // Debug logging
+        console.log('Task data:', task);
+        
         html += `<tr>
-          <td>${task.desc}</td>
-          <td>${task.assignee}</td>
+          <td>${task.desc || 'No description'}</td>
+          <td>${task.assignee || 'Unassigned'}</td>
           <td>${formatMinutes(task.estimatedMinutes ?? 0)}</td>
           <td>${actualTime}</td>
           <td><span class="${statusClass}">${task.status || 'todo'}</span></td>
