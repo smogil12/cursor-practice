@@ -421,7 +421,13 @@
         const estimatedMinutes = hours * 60 + mins;
         const status = document.getElementById('task-status-input').value;
         if (desc && assignee && estimatedMinutes > 0) {
-          project.tasks.push({ desc, assignee, estimatedMinutes, status });
+          project.tasks.push({ 
+            desc, 
+            assignee, 
+            estimatedMinutes, 
+            status,
+            createdAt: new Date().toISOString() // Store creation timestamp
+          });
           saveData();
           renderTasksView();
         }
@@ -472,6 +478,16 @@
     window.changeTaskStatus = function(idx) {
       const task = appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks[idx];
       
+      // Calculate AI estimated time if task is being marked complete
+      let aiEstimatedTime = null;
+      if (task.createdAt && task.status !== 'complete') {
+        const createdTime = new Date(task.createdAt);
+        const currentTime = new Date();
+        const timeDiffMs = currentTime - createdTime;
+        const timeDiffMinutes = Math.round(timeDiffMs / (1000 * 60));
+        aiEstimatedTime = timeDiffMinutes;
+      }
+      
       // Create modal HTML
       const modalHtml = `
         <div class="modal fade" id="statusModal" tabindex="-1">
@@ -484,6 +500,7 @@
               <div class="modal-body">
                 <p><strong>Task:</strong> ${task.desc}</p>
                 <p><strong>Estimated Time:</strong> ${formatMinutes(task.estimatedMinutes ?? 0)}</p>
+                ${aiEstimatedTime ? `<p><strong>AI Estimated Time:</strong> <span class="text-info">${formatMinutes(aiEstimatedTime)}</span> (based on creation time)</p>` : ''}
                 <label for="statusSelect" class="form-label">Select Status:</label>
                 <select id="statusSelect" class="form-select mb-3">
                   <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
@@ -492,7 +509,7 @@
                 </select>
                 <div id="actualTimeSection" style="display: none;">
                   <label for="actualHours" class="form-label">Actual Time Spent:</label>
-                  <div class="row g-2">
+                  <div class="row g-2 mb-2">
                     <div class="col">
                       <input type="number" id="actualHours" class="form-control" placeholder="Hours" min="0" step="1" />
                     </div>
@@ -500,6 +517,7 @@
                       <input type="number" id="actualMinutes" class="form-control" placeholder="Minutes" min="0" max="59" step="1" />
                     </div>
                   </div>
+                  ${aiEstimatedTime ? `<button type="button" class="btn btn-outline-info btn-sm" onclick="useAIEstimate(${aiEstimatedTime})">Use AI Estimate (${formatMinutes(aiEstimatedTime)})</button>` : ''}
                 </div>
               </div>
               <div class="modal-footer">
@@ -534,16 +552,24 @@
       });
     };
     
+    window.useAIEstimate = function(minutes) {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      document.getElementById('actualHours').value = hours;
+      document.getElementById('actualMinutes').value = mins;
+    };
+    
     window.saveTaskStatus = function(idx) {
       const newStatus = document.getElementById('statusSelect').value;
       const task = appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks[idx];
       task.status = newStatus;
       
-      // If marking as complete, get actual time
+      // If marking as complete, get actual time and store completion timestamp
       if (newStatus === 'complete') {
         const actualHours = parseInt(document.getElementById('actualHours').value, 10) || 0;
         const actualMins = parseInt(document.getElementById('actualMinutes').value, 10) || 0;
         task.actualMinutes = actualHours * 60 + actualMins;
+        task.completedAt = new Date().toISOString(); // Store completion timestamp
       }
       
       saveData();
