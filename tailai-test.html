@@ -478,14 +478,21 @@
     window.changeTaskStatus = function(idx) {
       const task = appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks[idx];
       
-      // Calculate AI estimated time if task is being marked complete
+      // Calculate AI estimated time if task has creation timestamp
       let aiEstimatedTime = null;
-      if (task.createdAt && task.status !== 'complete') {
+      if (task.createdAt) {
         const createdTime = new Date(task.createdAt);
         const currentTime = new Date();
         const timeDiffMs = currentTime - createdTime;
         const timeDiffMinutes = Math.round(timeDiffMs / (1000 * 60));
         aiEstimatedTime = timeDiffMinutes;
+        console.log('AI Estimation Debug:', {
+          createdAt: task.createdAt,
+          createdTime: createdTime,
+          currentTime: currentTime,
+          timeDiffMs: timeDiffMs,
+          timeDiffMinutes: timeDiffMinutes
+        });
       }
       
       // Create modal HTML
