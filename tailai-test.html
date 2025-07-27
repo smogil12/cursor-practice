@@ -301,7 +301,7 @@
       client.projects.forEach((project, idx) => {
         const total = typeof project.totalMinutes === 'number' ? project.totalMinutes : 0;
         const spent = (project.tasks || []).reduce((sum, t) => {
-          return sum + (t.status === 'complete' ? (typeof t.minutes === 'number' ? t.minutes : 0) : 0);
+          return sum + (t.status === 'complete' ? (typeof t.actualMinutes === 'number' ? t.actualMinutes : 0) : 0);
         }, 0);
         const remaining = Math.max(0, total - spent);
         html += `<tr>
@@ -363,16 +363,18 @@
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
-                  <tr><th>Description</th><th>Assignee</th><th>Time Spent</th><th>Status</th><th style="width:120px;">Actions</th></tr>
+                  <tr><th>Description</th><th>Assignee</th><th>Estimated Time</th><th>Actual Time</th><th>Status</th><th style="width:120px;">Actions</th></tr>
                 </thead>
                 <tbody>`;
       project.tasks.forEach((task, idx) => {
         const statusClass = task.status === 'complete' ? 'badge bg-success' : 
                           task.status === 'in progress' ? 'badge bg-warning' : 'badge bg-secondary';
+        const actualTime = task.actualMinutes ? formatMinutes(task.actualMinutes) : '-';
         html += `<tr>
           <td>${task.desc}</td>
           <td>${task.assignee}</td>
-          <td>${formatMinutes(task.minutes ?? 0)}</td>
+          <td>${formatMinutes(task.estimatedMinutes ?? 0)}</td>
+          <td>${actualTime}</td>
           <td><span class="${statusClass}">${task.status || 'todo'}</span></td>
           <td>
             <button onclick="changeTaskStatus(${idx})" class="btn btn-info btn-sm me-1"><i class="bi bi-pencil"></i></button>
@@ -390,10 +392,10 @@
                   <input type="text" id="task-assignee-input" class="form-control" placeholder="Assign to (name)" required />
                 </div>
                 <div class="col-auto">
-                  <input type="number" id="task-hours-input" class="form-control" placeholder="Hours" min="0" step="1" required />
+                  <input type="number" id="task-hours-input" class="form-control" placeholder="Est. Hours" min="0" step="1" required />
                 </div>
                 <div class="col-auto">
-                  <input type="number" id="task-mins-input" class="form-control" placeholder="Minutes" min="0" max="59" step="1" value="0" required />
+                  <input type="number" id="task-mins-input" class="form-control" placeholder="Est. Minutes" min="0" max="59" step="1" value="0" required />
                 </div>
                 <div class="col-auto">
                   <select id="task-status-input" class="form-control">
@@ -416,10 +418,10 @@
         const assignee = document.getElementById('task-assignee-input').value.trim();
         const hours = parseInt(document.getElementById('task-hours-input').value, 10) || 0;
         const mins = parseInt(document.getElementById('task-mins-input').value, 10) || 0;
-        const minutes = hours * 60 + mins;
+        const estimatedMinutes = hours * 60 + mins;
         const status = document.getElementById('task-status-input').value;
-        if (desc && assignee && minutes > 0) {
-          project.tasks.push({ desc, assignee, minutes, status });
+        if (desc && assignee && estimatedMinutes > 0) {
+          project.tasks.push({ desc, assignee, estimatedMinutes, status });
           saveData();
           renderTasksView();
         }
@@ -481,12 +483,24 @@
               </div>
               <div class="modal-body">
                 <p><strong>Task:</strong> ${task.desc}</p>
+                <p><strong>Estimated Time:</strong> ${formatMinutes(task.estimatedMinutes ?? 0)}</p>
                 <label for="statusSelect" class="form-label">Select Status:</label>
-                <select id="statusSelect" class="form-select">
+                <select id="statusSelect" class="form-select mb-3">
                   <option value="todo" ${task.status === 'todo' ? 'selected' : ''}>Todo</option>
                   <option value="in progress" ${task.status === 'in progress' ? 'selected' : ''}>In Progress</option>
                   <option value="complete" ${task.status === 'complete' ? 'selected' : ''}>Complete</option>
                 </select>
+                <div id="actualTimeSection" style="display: none;">
+                  <label for="actualHours" class="form-label">Actual Time Spent:</label>
+                  <div class="row g-2">
+                    <div class="col">
+                      <input type="number" id="actualHours" class="form-control" placeholder="Hours" min="0" step="1" />
+                    </div>
+                    <div class="col">
+                      <input type="number" id="actualMinutes" class="form-control" placeholder="Minutes" min="0" max="59" step="1" />
+                    </div>
+                  </div>
+                </div>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -508,12 +522,30 @@
       // Show modal
       const modal = new bootstrap.Modal(document.getElementById('statusModal'));
       modal.show();
+      
+      // Show/hide actual time section based on status
+      document.getElementById('statusSelect').addEventListener('change', function() {
+        const actualTimeSection = document.getElementById('actualTimeSection');
+        if (this.value === 'complete') {
+          actualTimeSection.style.display = 'block';
+        } else {
+          actualTimeSection.style.display = 'none';
+        }
+      });
     };
     
     window.saveTaskStatus = function(idx) {
       const newStatus = document.getElementById('statusSelect').value;
       const task = appData.clients[selectedClientIdx].projects[selectedProjectIdx].tasks[idx];
       task.status = newStatus;
+      
+      // If marking as complete, get actual time
+      if (newStatus === 'complete') {
+        const actualHours = parseInt(document.getElementById('actualHours').value, 10) || 0;
+        const actualMins = parseInt(document.getElementById('actualMinutes').value, 10) || 0;
+        task.actualMinutes = actualHours * 60 + actualMins;
+      }
+      
       saveData();
       renderTasksView();
       
