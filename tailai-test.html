@@ -399,28 +399,41 @@
       });
       html += `</tbody></table></div>
             <div class="collapse mt-3" id="addTaskCollapse">
-              <form id="add-task-form" class="row g-2 align-items-center">
-                <div class="col-auto flex-grow-1">
-                  <input type="text" id="task-desc-input" class="form-control" placeholder="Add new task" required />
-                </div>
-                <div class="col-auto">
-                  <input type="text" id="task-assignee-input" class="form-control" placeholder="Assign to (name)" required />
-                </div>
-                <div class="col-auto">
-                  <input type="number" id="task-hours-input" class="form-control" placeholder="Est. Hours" min="0" step="1" required />
-                </div>
-                <div class="col-auto">
-                  <input type="number" id="task-mins-input" class="form-control" placeholder="Est. Minutes" min="0" max="59" step="1" value="0" required />
-                </div>
-                <div class="col-auto">
-                  <select id="task-status-input" class="form-control">
-                    <option value="todo">Todo</option>
-                    <option value="in progress">In Progress</option>
-                  </select>
-                </div>
-                <div class="col-auto">
-                  <button type="submit" class="btn btn-success">Add Task</button>
-                </div>
+              <form id="add-task-form" class="table-responsive">
+                <table class="table table-borderless mb-0">
+                  <tbody>
+                    <tr>
+                      <td style="width: 25%;">
+                        <input type="text" id="task-desc-input" class="form-control" placeholder="Add new task" required />
+                      </td>
+                      <td style="width: 15%;">
+                        <input type="text" id="task-assignee-input" class="form-control" placeholder="Assign to (name)" required />
+                      </td>
+                      <td style="width: 20%;">
+                        <div class="row g-1">
+                          <div class="col">
+                            <input type="number" id="task-hours-input" class="form-control" placeholder="Hours" min="0" step="1" required />
+                          </div>
+                          <div class="col">
+                            <input type="number" id="task-mins-input" class="form-control" placeholder="Mins" min="0" max="59" step="1" value="0" required />
+                          </div>
+                        </div>
+                      </td>
+                      <td style="width: 15%;">
+                        <span class="text-muted">-</span>
+                      </td>
+                      <td style="width: 15%;">
+                        <select id="task-status-input" class="form-control">
+                          <option value="todo">Todo</option>
+                          <option value="in progress">In Progress</option>
+                        </select>
+                      </td>
+                      <td style="width: 10%;">
+                        <button type="submit" class="btn btn-success btn-sm">Add Task</button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </form>
             </div>
           </div>
