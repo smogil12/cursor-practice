@@ -219,6 +219,11 @@
     let selectedProjectIdx = null;
 
     // --- Render Functions ---
+    function formatMinutes(mins) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h ${m}m`;
+    }
     function renderApp() {
       if (selectedClientIdx === null) {
         renderClientsView();
@@ -290,20 +295,19 @@
             <div class="table-responsive">
               <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
-                  <tr><th>Name</th><th>Total Hours</th><th>Remaining</th><th style="width:120px;">Actions</th></tr>
+                  <tr><th>Name</th><th>Total Time</th><th>Remaining</th><th style="width:120px;">Actions</th></tr>
                 </thead>
                 <tbody>`;
       client.projects.forEach((project, idx) => {
-        const total = typeof project.hours === 'number' ? project.hours : 0;
+        const total = typeof project.totalMinutes === 'number' ? project.totalMinutes : 0;
         const spent = (project.tasks || []).reduce((sum, t) => {
-          // Only count hours for completed tasks
-          return sum + (t.status === 'complete' ? (typeof t.hours === 'number' ? t.hours : 0) : 0);
+          return sum + (t.status === 'complete' ? (typeof t.minutes === 'number' ? t.minutes : 0) : 0);
         }, 0);
         const remaining = Math.max(0, total - spent);
         html += `<tr>
           <td><a href="#" onclick="selectProject(${idx})" class="fw-bold text-decoration-none">${project.name}</a></td>
-          <td>${total}h</td>
-          <td>${remaining}h</td>
+          <td>${formatMinutes(total)}</td>
+          <td>${formatMinutes(remaining)}</td>
           <td>
             <button onclick="selectProject(${idx})" class="btn btn-primary btn-sm me-1"><i class="bi bi-folder2-open"></i></button>
             <button onclick="deleteProject(${idx})" class="btn btn-danger btn-sm"><i class="bi bi-trash"></i></button>
@@ -317,7 +321,10 @@
                   <input type="text" id="project-name-input" class="form-control" placeholder="Add new project" required />
                 </div>
                 <div class="col-auto">
-                  <input type="number" id="project-hours-input" class="form-control" placeholder="Total hours" min="0" step="0.1" required />
+                  <input type="number" id="project-hours-input" class="form-control" placeholder="Hours" min="0" step="1" required />
+                </div>
+                <div class="col-auto">
+                  <input type="number" id="project-mins-input" class="form-control" placeholder="Minutes" min="0" max="59" step="1" value="0" required />
                 </div>
                 <div class="col-auto">
                   <button type="submit" class="btn btn-success">Add Project</button>
@@ -330,9 +337,11 @@
       document.getElementById('add-project-form').onsubmit = function(e) {
         e.preventDefault();
         const name = document.getElementById('project-name-input').value.trim();
-        const hours = parseFloat(document.getElementById('project-hours-input').value);
-        if (name && !isNaN(hours)) {
-          client.projects.push({ name, hours, tasks: [] });
+        const hours = parseInt(document.getElementById('project-hours-input').value, 10) || 0;
+        const mins = parseInt(document.getElementById('project-mins-input').value, 10) || 0;
+        const totalMinutes = hours * 60 + mins;
+        if (name && totalMinutes > 0) {
+          client.projects.push({ name, totalMinutes, tasks: [] });
           saveData();
           renderProjectsView();
         }
@@ -363,7 +372,7 @@
         html += `<tr>
           <td>${task.desc}</td>
           <td>${task.assignee}</td>
-          <td>${task.hours ?? 0}h</td>
+          <td>${formatMinutes(task.minutes ?? 0)}</td>
           <td><span class="${statusClass}">${task.status || 'todo'}</span></td>
           <td>
             <button onclick="changeTaskStatus(${idx})" class="btn btn-info btn-sm me-1"><i class="bi bi-pencil"></i></button>
@@ -381,7 +390,10 @@
                   <input type="text" id="task-assignee-input" class="form-control" placeholder="Assign to (name)" required />
                 </div>
                 <div class="col-auto">
-                  <input type="number" id="task-hours-input" class="form-control" placeholder="Time spent (hours)" min="0" step="0.1" required />
+                  <input type="number" id="task-hours-input" class="form-control" placeholder="Hours" min="0" step="1" required />
+                </div>
+                <div class="col-auto">
+                  <input type="number" id="task-mins-input" class="form-control" placeholder="Minutes" min="0" max="59" step="1" value="0" required />
                 </div>
                 <div class="col-auto">
                   <select id="task-status-input" class="form-control">
@@ -402,10 +414,12 @@
         e.preventDefault();
         const desc = document.getElementById('task-desc-input').value.trim();
         const assignee = document.getElementById('task-assignee-input').value.trim();
-        const hours = parseFloat(document.getElementById('task-hours-input').value);
+        const hours = parseInt(document.getElementById('task-hours-input').value, 10) || 0;
+        const mins = parseInt(document.getElementById('task-mins-input').value, 10) || 0;
+        const minutes = hours * 60 + mins;
         const status = document.getElementById('task-status-input').value;
-        if (desc && assignee && !isNaN(hours)) {
-          project.tasks.push({ desc, assignee, hours, status });
+        if (desc && assignee && minutes > 0) {
+          project.tasks.push({ desc, assignee, minutes, status });
           saveData();
           renderTasksView();
         }
